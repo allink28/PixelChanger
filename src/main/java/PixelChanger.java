@@ -15,7 +15,7 @@ public class PixelChanger{
 
     public static void main(String args[])throws IOException{
         PixelChanger getSetPixels = new PixelChanger("src/main/resources/pic.jpg");
-        getSetPixels.messingAround();
+        getSetPixels.tileEffect(9);
         getSetPixels.saveImage("src/main/resources/out/editedPicture.jpg");
     }
 
@@ -26,26 +26,45 @@ public class PixelChanger{
     private void messingAround() {
         int width = img.getWidth();
         int height = img.getHeight();
-        for (int x = 0; x < width; ++x) {
-            for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; x += 10) {
+            for (int y = 0; y < height; y += 10) {
                 //get pixel value
                 int p = img.getRGB(x,y);
-                //get alpha
-                int a = (p>>24) & 0xff;
-                //get red
-                int r = (p>>16) & 0xff;
-                //get green
-                int g = (p>>8) & 0xff;
-                //get blue
-                int b = p & 0xff;
+//                //get alpha
+//                int a = (p>>24) & 0xff;
+//                //get red
+//                int r = (p>>16) & 0xff;
+//                //get green
+//                int g = (p>>8) & 0xff;
+//                //get blue
+//                int b = p & 0xff;
 
-                if (x % 10 == 0 || y % 10 == 0) {
-                    img.setRGB(x, y, darkenPixel(x, y));
-                }
 
-                //set the pixel value
-//                p = (a<<24) | (r<<16) | (g<<8) | b;
-//                img.setRGB(x, y, p);
+                setPixelsAround(x, y, p, 10);
+            }
+        }
+    }
+
+    /**
+     * 'Pixelizes' the image by copying one pixel onto the pixels around it
+     * @param pixelSize The side length of the new 'pixels' that the image will be made of
+     */
+    private void pixelize(int pixelSize) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        for (int x = 0; x < width; x += pixelSize) {
+            for (int y = 0; y < height; y += pixelSize) {
+                //get pixel value
+                int p = img.getRGB(x,y);
+                setPixelsAround(x, y, p, pixelSize);
+            }
+        }
+    }
+
+    private void setPixelsAround(int x, int y, int p, int distance) {
+        for (int i = 0; i < distance && x + i < img.getWidth(); ++i) {
+            for (int j = 0; j < distance && y + j < img.getHeight(); ++j) {
+                img.setRGB(x+i, y+j, p);
             }
         }
     }
@@ -58,8 +77,47 @@ public class PixelChanger{
         int width = img.getWidth();
         int height = img.getHeight();
         for (int x = 0; x < width; ++x) {
+            int xMod = x % gridSize;
             for (int y = 0; y < height; ++y) {
-                if (x % gridSize == 0 || y % gridSize == 0) {
+                if (xMod == 0 || y % gridSize == 0) {
+                    img.setRGB(x, y, darkenPixel(x, y));
+                }
+            }
+        }
+    }
+
+    private void tileEffect(int size) {
+        pixelize(size);
+        darkGrid(size);
+    }
+
+    private void verticalLines(int distance) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        for (int x = 0; x < width; x += distance) {
+            for (int y = 0; y < height; ++y) {
+                img.setRGB(x, y, darkenPixel(x, y));
+            }
+        }
+    }
+
+    private void horizontalLines(int distance) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        for (int y = 0; y < height; y += distance) {
+            for (int x = 0; x < width; ++x) {
+                img.setRGB(x, y, darkenPixel(x, y));
+            }
+        }
+    }
+
+    private void diagonalLines(int distance) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        for (int x = 0; x < width; ++x) {
+            int xMod = x % distance;
+            for (int y = 0; y < height; ++y) {
+                if ( xMod == (y % distance)) {
                     img.setRGB(x, y, darkenPixel(x, y));
                 }
             }
