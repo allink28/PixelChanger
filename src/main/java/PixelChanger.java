@@ -15,7 +15,7 @@ public class PixelChanger{
 
     public static void main(String args[])throws IOException{
         PixelChanger getSetPixels = new PixelChanger("src/main/resources/pic.jpg");
-        getSetPixels.tileEffect(9);
+        getSetPixels.randomLightDarkSquares(60);
         getSetPixels.saveImage("src/main/resources/out/editedPicture.jpg");
     }
 
@@ -40,7 +40,56 @@ public class PixelChanger{
 //                int b = p & 0xff;
 
 
-                setPixelsAround(x, y, p, 10);
+                copyPixelAround(x, y, p, 10);
+            }
+        }
+    }
+
+    private void randomLightDarkSquares(int gridSize) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        for (int x = 0; x < width; x += gridSize) {
+            for (int y = 0; y < height; y += gridSize) {
+                double random = Math.random();
+                if (random > .85) {
+                    lightenAround(x, y, gridSize);
+                } else if (random < .15){
+                    darkenAround(x, y, gridSize);
+                }
+            }
+        }
+    }
+
+    /**
+     * Alternates darkening a grid square and lightening a grid
+     * @param gridSize Must be an odd number
+     */
+    private void lightDarkSquares(int gridSize) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        for (int x = 0; x < width; x += gridSize) {
+            for (int y = 0; y < height; y += gridSize) {
+                if (((x+y) & 1) == 0) {
+                    darkenAround(x, y, gridSize);
+                } else {
+                    lightenAround(x, y, gridSize);
+                }
+            }
+        }
+    }
+
+    private void darkenAround(int x, int y, int distance) {
+        for (int i = 0; i < distance && x + i < img.getWidth(); ++i) {
+            for (int j = 0; j < distance && y + j < img.getHeight(); ++j) {
+                img.setRGB(x+i, y+j, darkenPixel(img.getRGB(x+i, y+j)));
+            }
+        }
+    }
+
+    private void lightenAround(int x, int y, int distance) {
+        for (int i = 0; i < distance && x + i < img.getWidth(); ++i) {
+            for (int j = 0; j < distance && y + j < img.getHeight(); ++j) {
+                img.setRGB(x+i, y+j, lightenPixel(img.getRGB(x+i, y+j)));
             }
         }
     }
@@ -56,12 +105,12 @@ public class PixelChanger{
             for (int y = 0; y < height; y += pixelSize) {
                 //get pixel value
                 int p = img.getRGB(x,y);
-                setPixelsAround(x, y, p, pixelSize);
+                copyPixelAround(x, y, p, pixelSize);
             }
         }
     }
 
-    private void setPixelsAround(int x, int y, int p, int distance) {
+    private void copyPixelAround(int x, int y, int p, int distance) {
         for (int i = 0; i < distance && x + i < img.getWidth(); ++i) {
             for (int j = 0; j < distance && y + j < img.getHeight(); ++j) {
                 img.setRGB(x+i, y+j, p);
@@ -80,7 +129,7 @@ public class PixelChanger{
             int xMod = x % gridSize;
             for (int y = 0; y < height; ++y) {
                 if (xMod == 0 || y % gridSize == 0) {
-                    img.setRGB(x, y, darkenPixel(x, y));
+                    img.setRGB(x, y, darkenPixel(img.getRGB(x, y)));
                 }
             }
         }
@@ -96,7 +145,7 @@ public class PixelChanger{
         int height = img.getHeight();
         for (int x = 0; x < width; x += distance) {
             for (int y = 0; y < height; ++y) {
-                img.setRGB(x, y, darkenPixel(x, y));
+                img.setRGB(x, y, darkenPixel(img.getRGB(x, y)));
             }
         }
     }
@@ -106,7 +155,7 @@ public class PixelChanger{
         int height = img.getHeight();
         for (int y = 0; y < height; y += distance) {
             for (int x = 0; x < width; ++x) {
-                img.setRGB(x, y, darkenPixel(x, y));
+                img.setRGB(x, y, darkenPixel(img.getRGB(x, y)));
             }
         }
     }
@@ -118,26 +167,42 @@ public class PixelChanger{
             int xMod = x % distance;
             for (int y = 0; y < height; ++y) {
                 if ( xMod == (y % distance)) {
-                    img.setRGB(x, y, darkenPixel(x, y));
+                    img.setRGB(x, y, darkenPixel(img.getRGB(x, y)));
                 }
             }
         }
     }
 
     /**
-     * @return Returns a darkened pixel at the given coordinate
+     * @return Returns a darkened pixel
      */
-    private int darkenPixel(int x, int y) {
-        //get pixel value
-        int p = img.getRGB(x,y);
+    private int darkenPixel(int p) {
+        double darkenFactor = 6;
+
         //get alpha
         int a = (p>>24) & 0xff;
         //get red
-        int r = ((p>>16) & 0xff) / 2;
+        int r = (int) (((p>>16) & 0xff) / darkenFactor);
         //get green
-        int g = ((p>>8) & 0xff) / 2;
+        int g = (int) (((p>>8) & 0xff) / darkenFactor);
         //get blue
-        int b = (p & 0xff) / 2;
+        int b = (int) ((p & 0xff) / darkenFactor);
+
+        //set the pixel value
+        return (a<<24) | (r<<16) | (g<<8) | b;
+    }
+
+    private int lightenPixel(int p) {
+        double lightenFactor = 6;
+
+        //get alpha
+        int a = (p>>24) & 0xff;
+        //get red
+        int r = Math.min((int)(((p>>16) & 0xff) * lightenFactor), 255);
+        //get green
+        int g = Math.min((int)(((p>>8) & 0xff) * lightenFactor), 255);
+        //get blue
+        int b = Math.min((int)((p & 0xff) * lightenFactor), 255);
 
         //set the pixel value
         return (a<<24) | (r<<16) | (g<<8) | b;
